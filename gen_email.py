@@ -3376,4 +3376,5 @@ NUM_EMAILS = 5
 
 for i in range(NUM_EMAILS):
     print(f"----- OPTION {i+1} -----")
+
     print(generate_emails())
