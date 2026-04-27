@@ -16,6 +16,9 @@ jobs:
         run: pip install -r requirements.txt
         
       - name: Retrieve emails
+        env:
+          EMAIL: ${{ secrets.EMAIL }}
+          EMAIL_APP_PASSWORD: ${{ secrets.EMAIL_APP_PASSWORD }}
         run: python3 get_gmails.py
 
       - name: Show files
