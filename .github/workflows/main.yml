@@ -1,0 +1,30 @@
+name: Analyze Emails
+
+on:
+  schedule:
+    - cron: "0 6 * * 1,5"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+        
+      - name: Retrieve emails
+        run: python3 get_gmails.py
+
+      - name: Show files
+        run: |
+          ls -R
+
+      - name: Analyze emails
+        run: python3 testing_main.py
+        
+      - name: Show files
+        run: |
+          ls -R
