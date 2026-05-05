@@ -36,7 +36,7 @@ if not os.path.exists(folder_path):
 # creates a text file for each email
 # each text file writes the from, subject, date, and text of the email
 try:
-    with MailBox(gmail_url).login(gmail_email, gmail_password, "Inbox") as mb:
+    with MailBox(gmail_url).login(EMAIL, APP_PASSWORD, "Inbox") as mb:
         try:
             for msg in mb.fetch():
                 try:
