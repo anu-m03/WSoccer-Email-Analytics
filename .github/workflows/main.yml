@@ -21,13 +21,8 @@ jobs:
           EMAIL_APP_PASSWORD: ${{ secrets.EMAIL_APP_PASSWORD }}
         run: python3 get_gmails.py
 
-      - name: Show files
-        run: |
-          ls -R
-
       - name: Analyze emails
         run: python3 testing_main.py
         
-      - name: Show files
-        run: |
-          ls -R
+      - name: Send reports
+        run: python3 send_emails.py
