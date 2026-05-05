@@ -40,7 +40,7 @@ try:
         try:
             for msg in mb.fetch():
                 try:
-                    with open(f'{folder_path}/email_{count}.txt', 'w') as file:
+                    with open(f'{folder_path}/email_{msg.uid}.txt', 'w') as file:
                         file.write(f"{msg.from_}\n{msg.subject}\n{msg.date}\n{msg.text}")
                     count += 1
                 except Exception as e:
