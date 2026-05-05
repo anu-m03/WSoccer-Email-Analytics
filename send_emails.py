@@ -18,7 +18,7 @@ logging.basicConfig(filename="email_errors.log",
                     )
 
 # all receiver emails
-receiver_email = ["sgrief@purdue.edu"]#, "nguy1051@purdue.edu", "liu3951@purdue.edu"]
+receiver_email = ["sgrief@purdue.edu", "nguy1051@purdue.edu", "liu3951@purdue.edu"]
 
 # get email and password
 load_dotenv()
@@ -70,7 +70,7 @@ message_bytes = message.as_bytes()
 
 # read the player data csv and get the file_name and promoted columns
 player_data = pd.read_csv(f"results/Player_Data_{date_tag}.csv", usecols=["file_name", "promoted"])
-'''
+
 # add report to emails
 # loop through data frame and move each email to the designated folder
 try:
@@ -92,7 +92,7 @@ except MailboxLoginError as e:
     logging.error(f"An error occurred while logging in {e}")
 except Exception as e:
     logging.error(f"Unexpected error: {e}")
-'''
+
 server = None
 
 # send email with the reports
