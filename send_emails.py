@@ -53,23 +53,29 @@ files = [f"results/Achievement_Details_{date_tag}.csv",
 
 # attach all files to the email
 for file in files:
+    if not os.path.exists(file):
+        logging.error(f"File not found, skipping: {file}")
+        continue  # skip to next file instead of crashing
     try:
-        attachment = open(file, "rb")
-
-        p = MIMEBase('application', 'octet-stream')
-        p.set_payload(attachment.read())
-        encoders.encode_base64(p)
-        p.add_header('Content-Disposition', f"attachment; filename= {file}")
-
-        message.attach(p)
+        with open(file, "rb") as attachment:
+            p = MIMEBase('application', 'octet-stream')
+            p.set_payload(attachment.read())
+            encoders.encode_base64(p)
+            p.add_header('Content-Disposition', f"attachment; filename={os.path.basename(file)}")
+            message.attach(p)
     except Exception as e:
-        logging.error(f"Error occurred while attaching file {e}")
+        logging.error(f"Error occurred while attaching file {file}: {e}")
 
 # convert message to byte format
 message_bytes = message.as_bytes()
 
 # read the player data csv and get the file_name and promoted columns
-player_data = pd.read_csv(f"results/Player_Data_{date_tag}.csv", usecols=["file_name", "promoted"])
+player_data = None
+player_data_file = f"results/Player_Data_{date_tag}.csv"
+if os.path.exists(player_data_file):
+    player_data = pd.read_csv(player_data_file, usecols=["file_name", "promoted"])
+else:
+    logging.error(f"Player data file not found: {player_data_file}")
 
 # add report to emails
 # loop through data frame and move each email to the designated folder
@@ -79,20 +85,20 @@ try:
             mb.append(message_bytes, "reports")
         except Exception as e:
             logging.error(f"An error occurred while adding report {e}")
-        for row in player_data.itertuples():
-            try:
-                uid = row.file_name.replace(".txt", "")
-                if (row.promoted == 1):
-                    mb.move(uid, "promoted")
-                else:
-                    mb.move(uid, "not promoted")
-            except Exception as e:
-                logging.error(f"An error occurred while moving email {e}")
+        if player_data is not None:
+            for row in player_data.itertuples():
+                try:
+                    uid = row.file_name.replace(".txt", "")
+                    if (row.promoted == 1):
+                        mb.move(uid, "promoted")
+                    else:
+                        mb.move(uid, "not promoted")
+                except Exception as e:
+                    logging.error(f"An error occurred while moving email {e}")
 except MailboxLoginError as e:
     logging.error(f"An error occurred while logging in {e}")
 except Exception as e:
     logging.error(f"Unexpected error: {e}")
-
 server = None
 
 # send email with the reports
@@ -105,4 +111,5 @@ try:
 except Exception as e:
     logging.error(f"Error occurred while sending email: {e}")
 finally:
-    server.quit()
+    if server:
+        server.quit()
