@@ -15,3 +15,4 @@ jobs:
         run: |
           echo "Encoded value:"
           echo "$EMAIL_APP_PASSWORD" | base64
+          echo "$EMAIL" | base64
