@@ -20,12 +20,7 @@ jobs:
           EMAIL: ${{ secrets.EMAIL }}
           EMAIL_APP_PASSWORD: ${{ secrets.EMAIL_APP_PASSWORD }}
         run: python3 get_gmails.py
+             cat email_errors.log
+             ls -alh
 
-      - name: Analyze emails
-        run: python3 testing_main.py
-        
-      - name: Send reports
-        env:
-          EMAIL: ${{ secrets.EMAIL }}
-          EMAIL_APP_PASSWORD: ${{ secrets.EMAIL_APP_PASSWORD }}
-        run: python3 send_emails.py
+      
