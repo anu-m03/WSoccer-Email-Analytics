@@ -19,7 +19,8 @@ jobs:
         env:
           EMAIL: ${{ secrets.EMAIL }}
           EMAIL_APP_PASSWORD: ${{ secrets.EMAIL_APP_PASSWORD }}
-        run: python3 get_gmails.py
+        run: | 
+             python3 get_gmails.py
              cat email_errors.log
              ls -alh
 
