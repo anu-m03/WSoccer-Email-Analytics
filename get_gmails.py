@@ -5,13 +5,10 @@ import logging
 from dotenv import load_dotenv
 from datetime import date
 
-# gets the environment variables for the app passwor and email
+# gets the environment variables for the app password and email
 load_dotenv()
 APP_PASSWORD = os.getenv('EMAIL_APP_PASSWORD')
 EMAIL = os.getenv('EMAIL')
-
-gmail_email = 'samanthagrief2@gmail.com'
-gmail_password = 'igpeoahxnlzhglty'
 gmail_url = 'imap.gmail.com'
 
 logging.basicConfig(filename="email_errors.log",
