@@ -58,8 +58,9 @@ def evaluate_group(
     # Attach club info to per-player df for the all-scores CSV
     players_ach = players_ach.copy()
     players_ach.insert(0, "group", group_dir.name)
-    if "player_club" in playersDF.columns:
-        players_ach["player_club"] = playersDF["player_club"].values
+    for col in ("player_club", "Dominant Foot", "Primary Position"):
+        if col in playersDF.columns:
+            players_ach[col] = playersDF[col].values
 
     scores     = players_ach["strength_score"]
     ind_scores  = players_ach["individual_score"] if "individual_score" in players_ach.columns else pd.Series([0.0] * len(players_ach))
@@ -347,6 +348,7 @@ def main():
     base_cols = [
         "group_index", "group",
         "file_name", "player_name", "player_club",
+        "Dominant Foot", "Primary Position",
         "achievements", "achievements_score",
         "individual_score", "team_score", "strength_score", "promoted",
     ]
