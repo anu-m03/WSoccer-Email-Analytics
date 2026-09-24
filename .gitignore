@@ -1,0 +1,13 @@
+# Credentials
+.env
+
+# Player emails & pipeline outputs (contain minors' personal data - never commit)
+test_emails/
+results/
+promoted_texts/
+email_errors.log
+field_check*.csv
+
+# Python
+__pycache__/
+.venv/
