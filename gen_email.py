@@ -7,6 +7,16 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import random
 
+# Schedules + names for synthetic emails (previously 23 per-club schedule .xlsx files + names.xlsx)
+GEN_DATA_FILE = "gen_email_data.xlsx"
+
+def read_gen_data(source):
+    """Return the table that used to live in <source>.xlsx (e.g. "names", "west-florida")."""
+    if source == "names":
+        return pd.read_excel(GEN_DATA_FILE, sheet_name="Names")
+    schedules = pd.read_excel(GEN_DATA_FILE, sheet_name="Schedules")
+    return schedules[schedules["Source"] == source].drop(columns="Source").reset_index(drop=True)
+
 def generate_emails():
 
     # RECIPIENTS
@@ -27,7 +37,7 @@ def generate_emails():
 
     # NAME
 
-    name = pd.read_excel("names.xlsx")
+    name = read_gen_data("names")
 
     first = list(name["First"].sample(1))
     first = "".join(first).strip()
@@ -2354,7 +2364,7 @@ def generate_emails():
     elif (leagues == "GA"):
         club = random.choice(gaClubs)
         if "West Florida" in club:
-            matches = pd.read_excel("west-florida.xlsx")
+            matches = read_gen_data("west-florida")
             sample_rows = matches.sample(random.randint(2,5))
 
             schedList = []
@@ -2366,7 +2376,7 @@ def generate_emails():
 
             conference = row["Conference"] + " Conference"
         elif "Florida" in club:
-            matches = pd.read_excel("florida-united.xlsx")
+            matches = read_gen_data("florida-united")
             sample_rows = matches.sample(random.randint(2, 5))
 
             schedList = []
@@ -2378,7 +2388,7 @@ def generate_emails():
 
             conference = row["Conference"] + " Conference"
         elif "Indy" in club:
-            matches = pd.read_excel("indy.xlsx")
+            matches = read_gen_data("indy")
             sample_rows = matches.sample(random.randint(2, 5))
 
             schedList = []
@@ -2390,7 +2400,7 @@ def generate_emails():
 
             conference = row["Conference"] + " Conference"
         elif "St. Louis" in club:
-            matches = pd.read_excel("st-louis.xlsx")
+            matches = read_gen_data("st-louis")
             sample_rows = matches.sample(random.randint(2, 5))
 
             schedList = []
@@ -2402,7 +2412,7 @@ def generate_emails():
 
             conference = row["Conference"] + " Conference"
         elif "Space Coast" in club:
-            matches = pd.read_excel("space-coast.xlsx")
+            matches = read_gen_data("space-coast")
             sample_rows = matches.sample(random.randint(2, 5))
 
             schedList = []
@@ -2414,7 +2424,7 @@ def generate_emails():
 
             conference = row["Conference"] + " Conference"
         elif "SoCal Reds" in club:
-            matches = pd.read_excel("socal-reds.xlsx")
+            matches = read_gen_data("socal-reds")
             sample_rows = matches.sample(random.randint(2, 5))
 
             schedList = []
@@ -2426,7 +2436,7 @@ def generate_emails():
 
             conference = row["Conference"] + " Conference"
         elif "Pinecrest" in club:
-            matches = pd.read_excel("pinecrest.xlsx")
+            matches = read_gen_data("pinecrest")
             sample_rows = matches.sample(random.randint(2, 5))
 
             schedList = []
@@ -2438,7 +2448,7 @@ def generate_emails():
 
             conference = row["Conference"] + " Conference"
         elif "Palm Beach" in club:
-            matches = pd.read_excel("palm-beach.xlsx")
+            matches = read_gen_data("palm-beach")
             sample_rows = matches.sample(random.randint(2, 5))
 
             schedList = []
@@ -2450,7 +2460,7 @@ def generate_emails():
 
             conference = row["Conference"] + " Conference"
         elif "New York" in club:
-            matches = pd.read_excel("new-york.xlsx")
+            matches = read_gen_data("new-york")
             sample_rows = matches.sample(random.randint(2, 5))
 
             schedList = []
@@ -2462,7 +2472,7 @@ def generate_emails():
 
             conference = row["Conference"] + " Conference"
         elif "MidWest" in club:
-            matches = pd.read_excel("midwest.xlsx")
+            matches = read_gen_data("midwest")
             sample_rows = matches.sample(random.randint(2, 5))
 
             schedList = []
@@ -2474,7 +2484,7 @@ def generate_emails():
 
             conference = row["Conference"] + " Conference"
         elif "Las Vegas Sports" in club:
-            matches = pd.read_excel("las-vegas-sports.xlsx")
+            matches = read_gen_data("las-vegas-sports")
             sample_rows = matches.sample(random.randint(2, 5))
 
             schedList = []
@@ -2486,7 +2496,7 @@ def generate_emails():
 
             conference = row["Conference"] + " Conference"
         elif "LA Surf" in club:
-            matches = pd.read_excel("la-surf.xlsx")
+            matches = read_gen_data("la-surf")
             sample_rows = matches.sample(random.randint(2, 5))
 
             schedList = []
@@ -2498,7 +2508,7 @@ def generate_emails():
 
             conference = row["Conference"] + " Conference"
         elif "Keystone" in club:
-            matches = pd.read_excel("keystone.xlsx")
+            matches = read_gen_data("keystone")
             sample_rows = matches.sample(random.randint(2, 5))
 
             schedList = []
@@ -2510,7 +2520,7 @@ def generate_emails():
 
             conference = row["Conference"] + " Conference"
         elif "HTX" in club:
-            matches = pd.read_excel("htx.xlsx")
+            matches = read_gen_data("htx")
             sample_rows = matches.sample(random.randint(2, 5))
 
             schedList = []
@@ -2522,7 +2532,7 @@ def generate_emails():
 
             conference = row["Conference"] + " Conference"
         elif "Colorado" in club:
-            matches = pd.read_excel("colorado.xlsx")
+            matches = read_gen_data("colorado")
             sample_rows = matches.sample(random.randint(2, 5))
 
             schedList = []
@@ -2534,7 +2544,7 @@ def generate_emails():
 
             conference = row["Conference"] + " Conference"
         elif "Central Illinois" in club:
-            matches = pd.read_excel("central-illinois.xlsx")
+            matches = read_gen_data("central-illinois")
             sample_rows = matches.sample(random.randint(2, 5))
 
             schedList = []
@@ -2546,7 +2556,7 @@ def generate_emails():
 
             conference = row["Conference"] + " Conference"
         elif "Bayside" in club:
-            matches = pd.read_excel("bayside.xlsx")
+            matches = read_gen_data("bayside")
             sample_rows = matches.sample(random.randint(2, 5))
 
             schedList = []
@@ -2558,7 +2568,7 @@ def generate_emails():
 
             conference = row["Conference"] + " Conference"
         elif "Baltimore" in club:
-            matches = pd.read_excel("baltimore.xlsx")
+            matches = read_gen_data("baltimore")
             sample_rows = matches.sample(random.randint(2, 5))
 
             schedList = []
@@ -2570,7 +2580,7 @@ def generate_emails():
 
             conference = row["Conference"] + " Conference"
         elif "Las Vegas" in club:
-            matches = pd.read_excel("las-vegas.xlsx")
+            matches = read_gen_data("las-vegas")
             sample_rows = matches.sample(random.randint(2, 5))
 
             schedList = []
@@ -2582,7 +2592,7 @@ def generate_emails():
 
             conference = row["Conference"] + " Conference"
         elif "San Diego" in club:
-            matches = pd.read_excel("san-diego.xlsx")
+            matches = read_gen_data("san-diego")
             sample_rows = matches.sample(random.randint(2, 5))
 
             schedList = []
@@ -2594,7 +2604,7 @@ def generate_emails():
 
             conference = row["Conference"] + " Conference"
         elif "TopHat" in club:
-            matches = pd.read_excel("tophat.xlsx")
+            matches = read_gen_data("tophat")
             sample_rows = matches.sample(random.randint(2, 5))
 
             schedList = []
@@ -2606,7 +2616,7 @@ def generate_emails():
 
             conference = row["Conference"] + " Conference"
         elif "Santa Clara" in club:
-            matches = pd.read_excel("santa-clara.xlsx")
+            matches = read_gen_data("santa-clara")
             sample_rows = matches.sample(random.randint(2, 5))
 
             schedList = []
@@ -2618,7 +2628,7 @@ def generate_emails():
 
             conference = row["Conference"] + " Conference"
         else:
-            matches = pd.read_excel("real-futbol.xlsx")
+            matches = read_gen_data("real-futbol")
             sample_rows = matches.sample(random.randint(2, 5))
 
             schedList = []
