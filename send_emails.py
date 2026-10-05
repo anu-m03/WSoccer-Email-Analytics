@@ -17,11 +17,13 @@ logging.basicConfig(filename="email_errors.log",
                     format='%(asctime)s - %(levelname)s - %(message)s'
                     )
 
-# all receiver emails
-receiver_email = ["sgrief@purdue.edu", "nguy1051@purdue.edu", "liu3951@purdue.edu"]
-
 # get email and password
 load_dotenv()
+
+# all receiver emails (REPORT_RECIPIENTS="a@x.com,b@y.com" overrides them for test sends)
+receiver_email = ["sgrief@purdue.edu", "nguy1051@purdue.edu", "liu3951@purdue.edu"]
+if os.getenv("REPORT_RECIPIENTS"):
+    receiver_email = [r.strip() for r in os.getenv("REPORT_RECIPIENTS").split(",") if r.strip()]
 APP_PASSWORD = os.getenv('EMAIL_APP_PASSWORD')
 EMAIL = os.getenv('EMAIL')
 
@@ -38,18 +40,33 @@ message["From"] = EMAIL
 message["To"] = ", ".join(receiver_email)
 message["Subject"] = "Email Analysis"
 
-# add a body to the email
-body = "Email Analysis attached"
-message.attach(MIMEText(body, "plain"))
+# count errors logged so far this run (fetching emails, analysis)
+n_errors = 0
+if os.path.exists("email_errors.log"):
+    with open("email_errors.log", encoding="utf-8", errors="ignore") as log:
+        n_errors = sum(1 for line in log if " - ERROR - " in line)
 
-# list of all attached files
-files = [f"results/Achievement_Details_{date_tag}.csv",
-         f"results/Keyword_Candidates_{date_tag}.csv",
-         f"results/Player_Data_{date_tag}.csv",
-         f"results/Promoted_Players_{date_tag}.csv",
-         "results/strength_histogram.png",
-         "results/strength_scores.png",
-         "email_errors.log"]
+# add a body to the email: the summary written by testing_main.py
+summary_file = f"results/Report_Summary_{date_tag}.html"
+if os.path.exists(summary_file):
+    with open(summary_file, encoding="utf-8") as f:
+        body = f.read()
+else:
+    logging.error(f"Summary file not found: {summary_file}")
+    body = "<p>Email Analysis attached</p>"
+errors_html = ""
+if n_errors:
+    errors_html = (f"<p style='color:#b00020'><b>&#9888; {n_errors} error(s) during this run</b> "
+                   "&mdash; see email_errors.log (attached).</p>")
+body = body.replace("<!--ERRORS-->", errors_html) if "<!--ERRORS-->" in body else errors_html + body
+message.attach(MIMEText(body, "html"))
+
+# list of all attached files: the coach-facing workbook, plus keyword candidates
+# for the team's keyword/scoring tuning
+files = [f"results/Recruiting_Report_{date_tag}.xlsx",
+         f"results/Keyword_Candidates_{date_tag}.csv"]
+if n_errors:
+    files.append("email_errors.log")
 
 # attach all files to the email
 for file in files:

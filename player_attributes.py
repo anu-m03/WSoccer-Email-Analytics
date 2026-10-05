@@ -73,6 +73,10 @@ class Candidate:
 # ──────────────────────────────────────────────────────────────────────────────
 _HEADER_RE = re.compile(r"(?i)^\s*(from|to|cc|bcc|subject|date|sent|reply-to)\s*:\s*(.*)$")
 _BARE_EMAIL_RE = re.compile(r"^\s*[\w.%+-]+@[\w.-]+\.[a-z]{2,}\s*$", re.I)
+_TIMESTAMP_RE = re.compile(r"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}")
+_QUOTE_PREFIX_RE = re.compile(r"^(?:\s*>)+\s?")
+# Messages from these senders in a thread are staff, not the player
+_STAFF_DOMAINS = ("purdue.edu",)
 _REPLY_BOUNDARY_RE = re.compile(
     r"(?i)^\s*(?:"
     r"on\s.+\swrote:\s*$"                      # Gmail / Apple reply header
@@ -95,17 +99,32 @@ def _normalize_line(line: str) -> str:
     return re.sub(r"(?<=[A-Za-z])-(?=[A-Za-z])", " ", line)
 
 
-def _scoped_lines(text: str) -> list[tuple[int, str, str, bool]]:
-    """Return (line_no, original, normalized, is_subject) for the player's own text."""
+def _is_staff(sender: str) -> bool:
+    return any(d in sender.lower() for d in _STAFF_DOMAINS)
+
+
+def _scoped_lines(text: str, history: bool = False) -> list[tuple[int, str, str, bool]]:
+    """Return (line_no, original, normalized, is_subject) for the player's own text.
+
+    By default only the newest message is read.  history=True also reads the
+    earlier messages quoted below it (a follow-up often leaves the details in the
+    player's first email), skipping any message sent by staff.
+    """
     lines = text.splitlines()
     out: list[tuple[int, str, str, bool]] = []
     start = 0
+    staff_block = False
 
     if lines and _BARE_EMAIL_RE.match(lines[0]):
-        # get_gmails.py .txt layout: sender / subject / date / body
+        # get_gmails.py .txt layout: sender / subject (may wrap) / date / body
+        date_idx = next((i for i in range(2, min(len(lines), 6)) if _TIMESTAMP_RE.match(lines[i])), 2)
         if len(lines) > 1:
-            out.append((2, lines[1], _normalize_line(lines[1]), True))
-        start = 3
+            subject = " ".join(l.strip() for l in lines[1:date_idx] if l.strip())
+            out.append((2, lines[1], _normalize_line(subject), True))
+        start = date_idx + 1
+        # a staff member forwarding the player's email: their own note above the
+        # forwarded message isn't the player's writing
+        staff_block = _is_staff(lines[0]) and any(_REPLY_BOUNDARY_RE.match(l) for l in lines[start:])
     else:
         # .eml layout: "Header: value" lines up to the first blank line
         i = 0
@@ -116,15 +135,41 @@ def _scoped_lines(text: str) -> list[tuple[int, str, str, bool]]:
             i += 1
         start = i
 
-    for idx in range(start, len(lines)):
-        line = lines[idx]
+    unquote = (lambda l: _QUOTE_PREFIX_RE.sub("", l)) if history else (lambda l: l)
+    has_body = False
+    idx = start
+    while idx < len(lines):
+        line = unquote(lines[idx])
         if _REPLY_BOUNDARY_RE.match(line):
-            break
-        if not line.strip() or line.lstrip().startswith(">"):
+            if has_body and not history:
+                break
+            # Nothing of the player's above the separator means a forward wrapper
+            # (staff forwarding the player's email); in history mode every separator
+            # starts an earlier message.  Skip the header block and read what's under it.
+            sender = line
+            subjects = []
+            idx += 1
+            while idx < len(lines):
+                h = unquote(lines[idx])
+                if h.strip() and not _HEADER_RE.match(h) and not _REPLY_BOUNDARY_RE.match(h):
+                    break
+                m = _HEADER_RE.match(h)
+                if m and m.group(1).lower() == "from":
+                    sender += " " + h
+                if m and m.group(1).lower() == "subject":
+                    subjects.append((idx + 1, h, _normalize_line(m.group(2)), True))
+                idx += 1
+            staff_block = _is_staff(sender)
+            if not staff_block:
+                out.extend(subjects)
+            continue
+        idx += 1
+        if staff_block or not line.strip() or line.lstrip().startswith(">"):
             continue
         if _SCHEDULE_RE.search(line):
             continue
-        out.append((idx + 1, line, _normalize_line(line), False))
+        out.append((idx, line, _normalize_line(line), False))
+        has_body = True
     return out
 
 
@@ -172,9 +217,14 @@ _FOOT_RULES: list[tuple[re.Pattern, float, str, str]] = [
      2, "side", "'<side> dominant'"),
     (re.compile(r"\b(lefty|leftie|righty|rightie)\b", re.I),
      2, "side", "lefty/righty"),
+    (re.compile(r"\b(?:dominant|preferred|strong|stronger|natural|main|primary|better|favorite|favourite)\s+"
+                r"foot\s*(?:is|:|-|=)?\s*(?:both|either|left\s*(?:and|&|/)\s*right|right\s*(?:and|&|/)\s*left)\b"
+                r"|\bfoot(?:edness)?\s*(?::|-|=)\s*(?:both|either)\b"
+                r"|\b(?:left\s*(?:and|&|/)\s*right|right\s*(?:and|&|/)\s*left)\s+(?:foot|footed|feet)\b", re.I),
+     3, "both", "labeled both feet"),
     (re.compile(r"\b(?:two|both|2)\s?footed\b|\bambipedal\b"
                 r"|\b(?:comfortable|confident|strong|effective|equally\s+\w+)\s+(?:with|on|using)\s+(?:both|either)\s+(?:feet|foot)\b"
-                r"|\buse\s+(?:both|either)\s+(?:feet|foot)\b", re.I),
+                r"|\bus(?:e|es|ing)\s+(?:both|either)\s+(?:feet|foot)\b", re.I),
      2.5, "both", "two-footed"),
     # Weak-foot mentions point to the OTHER side
     (re.compile(r"\b(?:weak|weaker|off|non\s?dominant|other)\s+foot\s*(?:is|:|-)?\s*(?:my\s+)?(left|right)\b", re.I),
@@ -195,11 +245,20 @@ _SIDE_NORMAL = {"left": "Left", "l": "Left", "lefty": "Left", "leftie": "Left",
 _OPPOSITE = {"Left": "Right", "Right": "Left"}
 
 
-def explain_dominant_foot(text: str) -> list[Candidate]:
+def _with_history(collect, text: str) -> list[Candidate]:
+    """Read the newest message; fall back to the player's earlier messages in the thread."""
     if not isinstance(text, str) or not text.strip():
         return []
+    return collect(_scoped_lines(text)) or collect(_scoped_lines(text, history=True))
+
+
+def explain_dominant_foot(text: str) -> list[Candidate]:
+    return _with_history(_foot_candidates, text)
+
+
+def _foot_candidates(scoped) -> list[Candidate]:
     cands: list[Candidate] = []
-    for line_no, orig, norm, _ in _scoped_lines(text):
+    for line_no, orig, norm, _ in scoped:
         hits = []
         for rx, score, mode, reason in _FOOT_RULES:
             for m in rx.finditer(norm):
@@ -272,7 +331,7 @@ _POSITION_RULES: list[tuple[str, re.Pattern, bool]] = [
 
 # Abbreviations — case-sensitive and always need context ("Position: CB", "2028 GK")
 _ABBREV_TO_POS = {
-    "GK": "Goalkeeper", "CB": "Center Back", "LCB": "Center Back", "RCB": "Center Back",
+    "GK": "Goalkeeper", "FB": "Fullback", "CB": "Center Back", "LCB": "Center Back", "RCB": "Center Back",
     "LB": "Left Back", "RB": "Right Back", "LWB": "Left Wing Back", "RWB": "Right Wing Back",
     "CDM": "Defensive Midfielder", "CM": "Center Midfielder", "CAM": "Attacking Midfielder",
     "LM": "Left Midfielder", "RM": "Right Midfielder",
@@ -337,10 +396,12 @@ def _position_hits(norm: str) -> list[tuple[int, int, str, str, bool]]:
 
 
 def explain_primary_position(text: str) -> list[Candidate]:
-    if not isinstance(text, str) or not text.strip():
-        return []
+    return _with_history(_position_candidates, text)
+
+
+def _position_candidates(scoped) -> list[Candidate]:
     cands: list[Candidate] = []
-    for line_no, orig, norm, is_subject in _scoped_lines(text):
+    for line_no, orig, norm, is_subject in scoped:
         short = _is_short_line(norm)
         for start, end, label, matched, needs_ctx in _position_hits(norm):
             before = _sentence_before(norm, start)

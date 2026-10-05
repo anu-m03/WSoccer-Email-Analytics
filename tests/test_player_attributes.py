@@ -24,6 +24,23 @@ FOOT_CASES = [
     ("I'm comfortable with both feet but prefer my left.", "Left"),
     ("I've been working on my left foot this offseason.", "Right"),
     ("My weaker foot is my left.", "Right"),
+    ("Jersey: #8  Dominant Foot: Both", "Both"),
+    ("Additional info: 5'7\", left and right footed, with no injury history", "Both"),
+    ("Centerback  - #15 (BFC), Left & Right Foot", "Both"),
+    ("Preferred Foot: Right, comfortable with both feet", "Right"),
+    # get_gmails.py .txt layout of an Outlook-forwarded email (how real emails arrive)
+    # (wrapped subject, "\r\r\n" line endings that read back as blank lines between headers)
+    ("coach@purdue.edu\nFW: 2027 GK - Jane Doe -\n\n Arlington ECNL\n2026-07-05 17:38:50+00:00\n\n\n________________________________\n\n"
+     "From: Jane Doe <jane@gmail.com>\n\nSent: Sunday, July 5, 2026 1:38 PM\n\nTo: Coach <coach@purdue.edu>\n\n"
+     "Subject: 2027 GK - Jane Doe - Arlington ECNL\n\nHi Coach,\nI'm a right-footed goalkeeper for Arlington ECNL.\n\n"
+     "________________________________\nFrom: Coach <coach@purdue.edu>\nSent: Monday\n\nAre you left footed?",
+     "Right"),
+    # follow-up email: foot is only in the player's earlier email quoted below;
+    # the staff reply in between is ignored
+    ("jane@gmail.com\nRe: Jane Doe - Solar SC\n2026-07-05 17:38:50+00:00\nHi Coach, here is my fall schedule.\n\n"
+     "On Mon, Sep 1, 2025 at 9:00 AM Coach Ward <ward331@purdue.edu> wrote:\n> Thanks Jane, are you right footed?\n> \n"
+     "> On Sun, Aug 31, 2025 at 8:00 PM Jane Doe <jane@gmail.com> wrote:\n> > Hi Coach, I am a left-footed winger.",
+     "Left"),
     # traps — no foot information
     ("I play primarily right back for Sting.", None),
     ("I play right back and left back.", None),
@@ -53,6 +70,18 @@ POSITION_CASES = [
     # get_gmails.py .txt layout with the position only in the subject
     ("jane@gmail.com\n2028 Goalkeeper - Jane Doe - Solar SC\n2026-09-20 10:00:00\nHi Coach,\nI wanted to introduce myself.",
      "Goalkeeper"),
+    # Outlook-forwarded email: the position is only in the player's body, and the
+    # earlier coach reply below it is ignored
+    ("coach@purdue.edu\nFW: Jane Doe - Solar SC\n2026-07-05 17:38:50+00:00\n\n________________________________\n"
+     "From: Jane Doe <jane@gmail.com>\nSent: Sunday, July 5, 2026 1:38 PM\nTo: Coach <coach@purdue.edu>\n"
+     "Subject: Jane Doe - Solar SC\n\nHi Coach,\nI am a center back for Solar SC.\n\n"
+     "________________________________\nFrom: Coach <coach@purdue.edu>\nSent: Monday\n\nWe need a striker.",
+     "Center Back"),
+    # staff forwarding with a note of their own: the note is not the player's writing
+    ("esmaster@purdue.edu\nFW: Jane Doe - Solar SC\n2026-07-05 17:38:50+00:00\nWe still need a striker, thoughts?\n\n"
+     "________________________________\nFrom: Jane Doe <jane@gmail.com>\nSubject: Jane Doe - Solar SC\n\n"
+     "Hi Coach,\nI am a center back for Solar SC.",
+     "Center Back"),
     # traps — no position information
     ("I look forward to hearing from you. Moving forward I hope to stay in touch.", None),
     ("I'll get right back to you with my schedule.", None),
