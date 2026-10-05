@@ -23,6 +23,9 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import numpy as np
 
+from player_attributes import extract_dominant_foot, extract_primary_position
+from report_export import write_report, write_summary_html
+
 # ──────────────────────────────────────────────────────────────────────────────
 # DEFINE REGEX INDICATORS
 # ──────────────────────────────────────────────────────────────────────────────
@@ -1008,6 +1011,8 @@ def parse_email_file(txt_path: Path, matcher: ClubMatcher) -> dict:
         "player_name":            name,
         "player_email(s)":        emails,
         "player_club":            club,
+        "Dominant Foot":          extract_dominant_foot(text),
+        "Primary Position":       extract_primary_position(text),
         "achievements":           ach_labels,
         "achievements_evidence":  ach_evidence,
         "youtube_links":          youtube,
@@ -1083,6 +1088,8 @@ def export_achievements_flat(
             "player_name":      prow.get("player_name", ""),
             "player_email(s)":  prow.get("player_email(s)", ""),
             "player_club":      prow.get("player_club", ""),
+            "Dominant Foot":    prow.get("Dominant Foot"),
+            "Primary Position": prow.get("Primary Position"),
             "individual_score": score_row.get("individual_score", 0),
             "team_score":       score_row.get("team_score", 0),
             "strength_score":   score_row.get("strength_score", 0),
@@ -1106,6 +1113,7 @@ def export_achievements_flat(
 
     col_order = [
         "file_name", "player_name", "player_email(s)", "player_club",
+        "Dominant Foot", "Primary Position",
         "achievement_label", "weight", "category",
         "individual_score", "team_score", "strength_score", "promoted",
     ]
@@ -1284,9 +1292,9 @@ def main():
     args = parser.parse_args()
 
     # ── Reload achievement data if a custom keywords file was specified ────────
-    global ACHIEVEMENT_PATTERNS, ACH_WEIGHTS, ACH_RE, LABEL_TOKENS
+    global ACHIEVEMENT_PATTERNS, ACH_WEIGHTS, ACH_CATEGORIES, ACH_RE, LABEL_TOKENS
     if args.keywords is not None:
-        ACHIEVEMENT_PATTERNS, ACH_WEIGHTS = _init_achievements(args.keywords)
+        ACHIEVEMENT_PATTERNS, ACH_WEIGHTS, ACH_CATEGORIES = _init_achievements(args.keywords)
         ACH_RE = {label: [re.compile(p, re.I) for p in pats]
                   for label, pats in ACHIEVEMENT_PATTERNS.items()}
         LABEL_TOKENS = build_label_token_bank(ACHIEVEMENT_PATTERNS)
@@ -1326,12 +1334,14 @@ def main():
 
     # ── Date tag: D_Mon_Year (e.g. 2_Apr_2026) ─────────────────────────────────
     today = date.today()
-    date_tag = today.strftime("%-d_%b_%Y")          # e.g. "2_Apr_2026"
+    date_tag = f"{today.day}_{today:%b_%Y}"         # e.g. "2_Apr_2026" (%-d is Linux-only)
 
     players_csv         = out_dir / f"Player_Data_{date_tag}.csv"
     promoted_csv        = out_dir / f"Promoted_Players_{date_tag}.csv"
     achievements_csv    = out_dir / f"Achievement_Details_{date_tag}.csv"
     keyword_csv         = out_dir / f"Keyword_Candidates_{date_tag}.csv"
+    report_xlsx         = out_dir / f"Recruiting_Report_{date_tag}.xlsx"
+    summary_html        = out_dir / f"Report_Summary_{date_tag}.html"
     promoted_emails_dir = out_dir / "promoted_emails"
 
     threshold = args.threshold
@@ -1363,6 +1373,7 @@ def main():
 
     _EXPORT_COLS = [
         "file_name", "player_name", "player_email(s)", "player_club",
+        "Dominant Foot", "Primary Position",
         "individual_score", "team_score", "strength_score", "promoted",
         "youtube_links", "achievements",
     ]
@@ -1381,6 +1392,10 @@ def main():
     # 4) Keyword_Candidates — same as before
     export_new_keyword_candidates(playersDF, out_csv=str(keyword_csv), threshold=0.20)
 
+    # 5) Recruiting_Report workbook + email summary — what the report email carries
+    sheets = write_report(playersDF, report_xlsx, threshold, ACH_WEIGHTS, ACH_CATEGORIES)
+    write_summary_html(sheets, summary_html, threshold)
+
     # ── Missing field reports ─────────────────────────────────────────────────
     missing_names  = build_missing_names(playersDF)
     missing_emails = build_missing_emails(playersDF)
@@ -1397,6 +1412,8 @@ def main():
     print(f"\nMissing names    : {missing_names['file_name'].count()}")
     print(f"Missing emails   : {missing_emails['file_name'].count()}")
     print(f"Missing clubs    : {missing_clubs['file_name'].count()}")
+    print(f"Missing foot     : {playersDF['Dominant Foot'].isna().sum()}")
+    print(f"Missing position : {playersDF['Primary Position'].isna().sum()}")
     print(f"\nPromoted         : {n_promoted} / {n_total}  ({round(pct, 2)}%)")
     print()
     print(players_ach[players_ach["promoted"] == 1].to_string(index=False))
